@@ -1,12 +1,12 @@
-const { default: axios } = require("axios");
-const graphql = require("graphql");
+import { default as axios } from "axios";
+import graphql from "graphql";
+
 const {
   GraphQLObjectType,
-  GraphQLString,
-  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLSchema,
+  GraphQLString,
 } = graphql;
 
 const UserType = new GraphQLObjectType({
@@ -14,12 +14,14 @@ const UserType = new GraphQLObjectType({
   fields: () => ({
     id: { type: GraphQLString },
     userName: { type: GraphQLString },
+    email: { type: GraphQLString },
     todos: {
       type: new GraphQLList(TodoType),
-      resolve(parentValue, args) {
-        return axios
-          .get(`http://localhost:3000/users/${parentValue.id}/todos`)
-          .then((res) => res.data);
+      async resolve(parentValue, args) {
+        const res = await axios.get(
+          `http://localhost:3000/users/${parentValue.id}/todos`
+        );
+        return res.data;
       },
     },
   }),
@@ -33,10 +35,11 @@ const TodoType = new GraphQLObjectType({
     description: { type: GraphQLString },
     user: {
       type: UserType,
-      resolve(parentValue, args) {
-        return axios
-          .get(`http://localhost:3000/users/${parentValue.userId}`)
-          .then((res) => res.data);
+      async resolve(parentValue, args) {
+        const res = await axios.get(
+          `http://localhost:3000/users/${parentValue.userId}`
+        );
+        return res.data;
       },
     },
   }),
@@ -48,19 +51,103 @@ const RootQuery = new GraphQLObjectType({
     user: {
       type: UserType,
       args: { id: { type: GraphQLString } },
-      resolve(parentValue, args) {
-        return axios
-          .get(`http://localhost:3000/users/${args.id}`)
-          .then((res) => res.data);
+      async resolve(parentValue, args) {
+        const res = await axios.get(`http://localhost:3000/users/${args.id}`);
+        return res.data;
       },
     },
     todo: {
       type: TodoType,
       args: { id: { type: GraphQLString } },
-      resolve(parentValue, args) {
-        return axios
-          .get(`http://localhost:3000/todos/${args.id}`)
-          .then((res) => res.data);
+      async resolve(parentValue, args) {
+        const res = await axios.get(`http://localhost:3000/todos/${args.id}`);
+        return res.data;
+      },
+    },
+  },
+});
+
+const todoMutation = new GraphQLObjectType({
+  name: "TodoMutation",
+  fields: {
+    addTodo: {
+      type: TodoType,
+      args: {
+        title: { type: new GraphQLNonNull(GraphQLString) },
+        description: { type: GraphQLString },
+        userId: { type: new GraphQLNonNull(GraphQLString) },
+      },
+      async resolve(parentValue, args) {
+        console.log("ARGS: ", args);
+        const res = await axios.post(`http://localhost:3000/todos`, args);
+        console.log("RES-DATA: ", res.data);
+        return res.data;
+      },
+    },
+    deleteTodo: {
+      type: TodoType,
+      args: { id: { type: new GraphQLNonNull(GraphQLString) } },
+      async resolve(parentValue, { id }) {
+        const res = await axios.delete(`http://localhost:3000/todos/${id}`);
+        return res.data;
+      },
+    },
+    updateTodo: {
+      type: TodoType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) },
+        title: { type: GraphQLString },
+        description: { type: GraphQLString },
+        userId: { type: GraphQLString },
+      },
+      async resolve(parentValue, args) {
+        const res = await axios.patch(
+          `http://localhost:3000/todos/${args.id}`,
+          args
+        );
+        return res.data;
+      },
+    },
+  },
+});
+
+const userMutation = new GraphQLObjectType({
+  name: "UserMutation",
+  fields: {
+    addUser: {
+      type: UserType,
+      args: {
+        userName: { type: new GraphQLNonNull(GraphQLString) },
+        email: { type: new GraphQLNonNull(GraphQLString) },
+      },
+      async resolve(parentValue, args) {
+        console.log("ARGS: ", args);
+        const res = await axios.post(`http://localhost:3000/users`, args);
+        console.log("RES-DATA: ", res.data);
+        return res.data;
+      },
+    },
+    deleteUser: {
+      type: UserType,
+      args: { id: { type: new GraphQLNonNull(GraphQLString) } },
+      async resolve(parentValue, { id }) {
+        const res = await axios.delete(`http://localhost:3000/users/${id}`);
+        return res.data;
+      },
+    },
+    updateUser: {
+      type: UserType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) },
+        userName: { type: GraphQLString },
+        email: { type: GraphQLString },
+      },
+      async resolve(parentValue, args) {
+        const res = await axios.patch(
+          `http://localhost:3000/users/${args.id}`,
+          args
+        );
+        return res.data;
       },
     },
   },
@@ -76,19 +163,19 @@ const mutation = new GraphQLObjectType({
         description: { type: GraphQLString },
         userId: { type: new GraphQLNonNull(GraphQLString) },
       },
-      resolve(parentValue, args) {
-        return axios
-          .post(`http://localhost:3000/todos`, args)
-          .then((res) => res.data);
+      async resolve(parentValue, args) {
+        console.log("ARGS: ", args);
+        const res = await axios.post(`http://localhost:3000/todos`, args);
+        console.log("RES-DATA: ", res.data);
+        return res.data;
       },
     },
     deleteTodo: {
       type: TodoType,
       args: { id: { type: new GraphQLNonNull(GraphQLString) } },
-      resolve(parentValue, { id }) {
-        return axios
-          .delete(`http://localhost:3000/todos/${id}`)
-          .then((res) => res.data);
+      async resolve(parentValue, { id }) {
+        const res = await axios.delete(`http://localhost:3000/todos/${id}`);
+        return res.data;
       },
     },
     updateTodo: {
@@ -99,16 +186,62 @@ const mutation = new GraphQLObjectType({
         description: { type: GraphQLString },
         userId: { type: GraphQLString },
       },
-      resolve(parentValue, args) {
-        return axios
-          .patch(`http://localhost:3000/todos/${args.id}`, args)
-          .then((res) => res.data);
+      async resolve(parentValue, args) {
+        const res = await axios.patch(
+          `http://localhost:3000/todos/${args.id}`,
+          args
+        );
+        return res.data;
+      },
+    },
+    addUser: {
+      type: UserType,
+      args: {
+        userName: { type: new GraphQLNonNull(GraphQLString) },
+        email: { type: new GraphQLNonNull(GraphQLString) },
+      },
+      async resolve(parentValue, args) {
+        console.log("ARGS: ", args);
+        const res = await axios.post(`http://localhost:3000/users`, args);
+        console.log("RES-DATA: ", res.data);
+        return res.data;
+      },
+    },
+    deleteUser: {
+      type: UserType,
+      args: { id: { type: new GraphQLNonNull(GraphQLString) } },
+      async resolve(parentValue, { id }) {
+        const res = await axios.delete(`http://localhost:3000/users/${id}`);
+        return res.data;
+      },
+    },
+    updateUser: {
+      type: UserType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) },
+        userName: { type: GraphQLString },
+        email: { type: GraphQLString },
+      },
+      async resolve(parentValue, args) {
+        const res = await axios.patch(
+          `http://localhost:3000/users/${args.id}`,
+          args
+        );
+        return res.data;
       },
     },
   },
 });
 
-module.exports = new GraphQLSchema({
+// const mutation = new GraphQLObjectType({
+//   name: "Mutation",
+//   fields: {
+//     todos: { type: todoMutation },
+//     users: { type: userMutation },
+//   },
+// });
+
+export default new GraphQLSchema({
   query: RootQuery,
   mutation,
 });

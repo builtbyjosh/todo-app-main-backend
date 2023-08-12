@@ -3,12 +3,17 @@
     {
       "id": "23",
       "userName": "Bill",
-      "age": 20
+      "email": "bill@email.com"
     },
     {
       "id": "40",
       "userName": "Ted",
-      "age": 23
+      "email": "ted@email.com"
+    },
+    {
+      "id": "1",
+      "userName": "Toby",
+      "email": "toby@email.com"
     }
   ],
   "todos": [
@@ -29,6 +34,12 @@
       "userId": "40",
       "id": "yH2kv7g",
       "description": "its a purple cherokee"
+    },
+    {
+      "title": "user mutations",
+      "description": "find out why user mutations aren't working",
+      "userId": "1",
+      "id": "QIbv2Aj"
     }
   ]
 }
